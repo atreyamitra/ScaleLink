@@ -15,10 +15,10 @@ if (!baseUrl) {
   process.exit(1);
 }
 
-const FAKE_CLIENT_IP = '203.0.113.42'; // one simulated client, fires everything
+const EXPECTED_LIMIT = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 20);
 
 async function main() {
-  console.log(`Firing 25 requests from simulated client ${FAKE_CLIENT_IP} against ${baseUrl}\n`);
+  console.log(`Firing 25 requests from this source IP against ${baseUrl}\n`);
 
   const results = [];
   for (let i = 0; i < 25; i++) {
@@ -26,7 +26,6 @@ async function main() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Forwarded-For': FAKE_CLIENT_IP,
       },
       body: JSON.stringify({ url: `https://example.com/verify/${i}` }),
     });
@@ -45,11 +44,10 @@ async function main() {
   console.log('\n=== Summary ===');
   console.log(`Distinct backend instances that answered: ${[...instancesSeen].join(', ')}`);
   console.log(`Allowed: ${allowed}, Blocked (429): ${blocked}`);
-  console.log(
-    instancesSeen.size > 1
-      ? 'CONFIRMED: multiple instances served this client, and the limit still held exactly.'
-      : 'NOTE: only one instance answered in this run - try again, or check the LB is routing to both.'
-  );
+  const valid = !instancesSeen.has(null) && instancesSeen.size > 1 &&
+    allowed === EXPECTED_LIMIT && blocked === 25 - EXPECTED_LIMIT;
+  if (!valid) throw new Error('Distributed verification failed: require two instances and the exact configured limit (fresh window, limit < 25)');
+  console.log('PASS: two instances shared the exact configured limit.');
 }
 
 main().catch((err) => {

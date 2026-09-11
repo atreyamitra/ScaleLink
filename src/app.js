@@ -17,14 +17,9 @@ function createApp() {
   app.use(cors());
   app.use(express.json({ limit: '10kb' }));
 
-  // Behind the Azure Load Balancer, the LB's IP would otherwise be all
-  // req.ip ever sees, collapsing every real client into one rate-limit
-  // bucket. Trusting the proxy lets Express derive the real client IP from
-  // X-Forwarded-For - correct behavior for any service sitting behind a
-  // load balancer, and also what makes the k6 load test's simulated
-  // per-client IPs (see loadtest/k6-script.js) actually exercise
-  // *separate* rate-limit buckets instead of one shared one.
-  app.set('trust proxy', true);
+  // Direct clients cannot choose their limiter identity via forwarded headers.
+  // Only explicitly configured reverse proxies may supply client addresses.
+  app.set('trust proxy', env.trustProxy);
   if (env.nodeEnv !== 'test') {
     app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/health' } }));
   }

@@ -24,18 +24,18 @@ async function shorten(req, res, next) {
 
     const redis = getRedisClient();
     let code;
-    let attempts = 0;
-
-    // Collision retry loop - astronomically unlikely at this ID space, but
-    // correctness under a shared keyspace across N stateless instances is
-    // exactly the kind of thing worth being explicit about.
-    do {
-      code = nanoid(CODE_LENGTH);
-      attempts += 1;
-    } while ((await redis.exists(URL_KEY_PREFIX + code)) && attempts < 5);
-
-    await redis.set(URL_KEY_PREFIX + code, url);
-    await redis.set(CLICKS_KEY_PREFIX + code, 0);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const candidate = nanoid(CODE_LENGTH);
+      // SET NX reserves the mapping atomically across all instances. Missing
+      // click counters mean zero; INCR creates them without a reset race.
+      if (await redis.set(URL_KEY_PREFIX + candidate, url, 'NX')) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) {
+      return res.status(503).json({ error: 'Unable to allocate a short code; please retry' });
+    }
 
     return res.status(201).json({
       code,

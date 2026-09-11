@@ -130,3 +130,11 @@ This setup is honestly described as:
 This is accurate, verifiable (anyone can ask you to demo it live in an
 interview by literally running `docker compose up`), and avoids overstating
 it as a "cloud deployment" when it's a local one made publicly reachable.
+
+### Client identity after the security fix
+
+Nginx now replaces forwarded identity headers and the app trusts only the
+container proxy network. Load generators cannot invent client IPs. Raise the
+limiter threshold explicitly for isolated capacity tests; report created and
+rate-limited responses separately. Earlier instructions/results relying on
+spoofed X-Forwarded-For do not describe the hardened deployment.

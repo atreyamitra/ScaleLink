@@ -45,6 +45,8 @@ export const options = {
     },
   },
   thresholds: {
+    checks: ['rate==1'],
+    http_req_failed: ['rate==0'],
     http_req_duration: ['p(99)<500'], // fails the run if p99 exceeds this - tune per your results
   },
 };
@@ -52,18 +54,11 @@ export const options = {
 export default function () {
   const payload = JSON.stringify({ url: `https://example.com/loadtest/${__VU}/${__ITER}` });
 
-  // Simulate a distinct real client per virtual user (this is what a real
-  // population of users hitting the service would look like) so the
-  // per-IP rate limiter doesn't collapse every k6 VU into one shared
-  // bucket. The service trusts X-Forwarded-For (see src/app.js) exactly
-  // as it would behind any real load balancer or CDN.
-  const fakeClientIp = `10.${(__VU >> 8) % 256}.${__VU % 256}.${(__ITER % 250) + 1}`;
-  const params = {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Forwarded-For': fakeClientIp,
-    },
-  };
+  // VUs share the load generator's actual source IP. Do not spoof identity.
+  // For isolated throughput tests, raise the deployed limiter threshold;
+  // keep a separate run at the production limit to measure enforcement.
+  const params = { headers: { 'Content-Type': 'application/json' },
+    responseCallback: http.expectedStatuses(201, 429) };
 
   const res = http.post(`${BASE_URL}/api/shorten`, payload, params);
 
@@ -90,8 +85,9 @@ export function handleSummary(data) {
   console.log(`Requests/sec (avg): ${rps.toFixed(1)}`);
   console.log(`Latency p50/p95/p99 (ms): ${p50.toFixed(1)} / ${p95.toFixed(1)} / ${p99.toFixed(1)}`);
   console.log(`Total requests: ${data.metrics.http_reqs.values.count}`);
-  console.log('This is the number to quote on the resume: e.g.');
-  console.log(`  "handled ${Math.round(rps)} req/sec at p99 ${p99.toFixed(0)}ms across 2 load-balanced instances"`);
+  console.log(`Created: ${data.metrics.created_responses?.values.count || 0}`);
+  console.log(`Rate limited: ${data.metrics.rate_limited_responses?.values.count || 0}`);
+  console.log('Aggregate request throughput includes rejected requests; report created responses separately.');
 
   return {
     stdout: JSON.stringify(data, null, 2), // keep default JSON output too

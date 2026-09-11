@@ -23,7 +23,8 @@ const { getRedisClient } = require('../config/redis');
  */
 const SLIDING_WINDOW_SCRIPT = `
 local key = KEYS[1]
-local now = tonumber(ARGV[1])
+local clock = redis.call('TIME')
+local now = tonumber(clock[1]) * 1000 + math.floor(tonumber(clock[2]) / 1000)
 local window_ms = tonumber(ARGV[2])
 local limit = tonumber(ARGV[3])
 
@@ -31,7 +32,10 @@ redis.call('ZREMRANGEBYSCORE', key, 0, now - window_ms)
 local count = redis.call('ZCARD', key)
 
 if count < limit then
-  redis.call('ZADD', key, now, now .. '-' .. math.random())
+  local sequence_key = KEYS[2]
+  local sequence = redis.call('INCR', sequence_key)
+  redis.call('PEXPIRE', sequence_key, window_ms)
+  redis.call('ZADD', key, now, tostring(sequence))
   redis.call('PEXPIRE', key, window_ms)
   return { 1, limit - count - 1 }
 else
@@ -43,7 +47,7 @@ function getClientWithScript() {
   const redis = getRedisClient();
   if (!redis.slidingWindowLimit) {
     redis.defineCommand('slidingWindowLimit', {
-      numberOfKeys: 1,
+      numberOfKeys: 2,
       lua: SLIDING_WINDOW_SCRIPT,
     });
   }
@@ -58,9 +62,9 @@ function distributedRateLimiter(options = {}) {
     try {
       const redis = getClientWithScript();
       const key = `ratelimit:{${req.ip}}`; // hash tag: keeps this stable under Redis Cluster too
-      const now = Date.now();
+      const now = 0; // reserved argument; the Lua script uses Redis server time
 
-      const [allowed, remaining] = await redis.slidingWindowLimit(key, now, windowMs, limit);
+      const [allowed, remaining] = await redis.slidingWindowLimit(key, `${key}:sequence`, now, windowMs, limit);
 
       res.set('X-RateLimit-Limit', String(limit));
       res.set('X-RateLimit-Remaining', String(Math.max(0, remaining)));

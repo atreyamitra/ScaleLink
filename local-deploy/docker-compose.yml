@@ -9,6 +9,7 @@ services:
     build: ..
     environment:
       NODE_ENV: production
+      TRUST_PROXY: uniquelocal
       PORT: 8080
       REDIS_URL: redis://redis:6379
       INSTANCE_ID: app-1
@@ -23,6 +24,7 @@ services:
     build: ..
     environment:
       NODE_ENV: production
+      TRUST_PROXY: uniquelocal
       PORT: 8080
       REDIS_URL: redis://redis:6379
       INSTANCE_ID: app-2

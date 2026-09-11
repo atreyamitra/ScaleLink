@@ -5,7 +5,7 @@ let client;
 function getRedisClient() {
   if (client) return client;
 
-  if (env.nodeEnv === 'test') {
+  if (env.nodeEnv === 'test' && process.env.REDIS_TEST_MODE !== 'real') {
     const RedisMock = require('ioredis-mock');
     client = new RedisMock();
   } else {
