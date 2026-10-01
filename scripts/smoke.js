@@ -18,6 +18,15 @@
  * script finishes inside one window, and that this script is the only client
  * sharing its IP with the limiter during the run.
  */
+// Fail-safe: assume failure until every check has run. A Node process whose event
+// loop drains while a promise is still pending exits with code 0 silently; that
+// must never read as a pass, so success is only set at the very end of main().
+process.exitCode = 1;
+let completed = false;
+process.on('exit', () => {
+  if (!completed) console.error('\nSMOKE FAILED: the script ended before all checks completed');
+});
+
 const baseUrl = (process.argv[2] || 'http://localhost:8080').replace(/\/+$/, '');
 const EXTRA_REQUESTS = 40; // sent beyond the limit, concurrently, with forged headers
 
@@ -81,11 +90,12 @@ async function main() {
   );
   check('both instances took part in the burst', servers.size >= 2, `served by: ${[...servers].join(', ')}`);
 
+  completed = true;
   console.log(failures === 0 ? '\nSMOKE OK' : `\nSMOKE FAILED (${failures} check(s))`);
-  process.exit(failures === 0 ? 0 : 1);
+  process.exitCode = failures === 0 ? 0 : 1;
 }
 
 main().catch((err) => {
   console.error('smoke test crashed:', err);
-  process.exit(1);
+  process.exitCode = 1;
 });
