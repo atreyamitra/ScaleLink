@@ -2,13 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  # Unit tests + the real-Redis integration/concurrency suite. The integration
+  # tests REQUIRE a reachable Redis and fail (they do not skip) without one, so
+  # a green run here means the concurrency guarantees were exercised against a
+  # real Redis server.
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
 
     services:
       redis:
@@ -17,25 +32,58 @@ jobs:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # The suite FLUSHDBs this database; it refuses to use db 0.
+      TEST_REDIS_URL: redis://127.0.0.1:6379/15
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: ${{ matrix.node }}
+          cache: npm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
-      - name: Run Jest suite (mock Redis, includes true-concurrency test)
+      - name: Record which Redis the tests run against
+        run: |
+          node -e "
+            const Redis = require('ioredis');
+            const r = new Redis(process.env.TEST_REDIS_URL);
+            r.info('server').then((i) => { console.log(i.match(/redis_version:.*/)[0]); return r.quit(); });
+          "
+
+      - name: Tests (unit + real-Redis integration and concurrency)
         run: npm test
 
-      - name: Verify sliding-window limiter under real concurrency against real Redis
-        env:
-          REDIS_URL: redis://localhost:6379
-        run: node verify-real-redis.js
+  # The actual topology: nginx -> two app containers -> one Redis, built from the
+  # repo's Dockerfile and docker-compose.yml, exercised over HTTP.
+  compose-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build and start the stack (waits for health checks)
+        run: docker compose up -d --build --wait
+
+      - name: Smoke test through nginx
+        run: node scripts/smoke.js http://localhost:8080
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

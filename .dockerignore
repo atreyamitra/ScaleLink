@@ -2,9 +2,13 @@ node_modules
 npm-debug.log
 .env
 .git
+.github
 .gitignore
 tests
 terraform
 loadtest
-DEPLOY.md
-README.md
+scripts
+nginx
+docs
+benchmark-results
+*.md
