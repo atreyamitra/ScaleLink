@@ -1,0 +1,113 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /scripts/k6-script.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 1000 max VUs, 1m0s max duration (incl. graceful stop):
+              * measure: 500.00 iterations/s for 30s (maxVUs: 100-1000, exec: shortenOnce, gracefulStop: 30s)
+
+
+running (0m01.0s), 0001/0100 VUs, 485 complete and 0 interrupted iterations
+measure   [   3% ] 0001/0100 VUs  01.0s/30s  500.00 iters/s
+
+running (0m02.0s), 0002/0100 VUs, 984 complete and 0 interrupted iterations
+measure   [   7% ] 0002/0100 VUs  02.0s/30s  500.00 iters/s
+
+running (0m03.0s), 0001/0100 VUs, 1485 complete and 0 interrupted iterations
+measure   [  10% ] 0001/0100 VUs  03.0s/30s  500.00 iters/s
+
+running (0m04.0s), 0001/0100 VUs, 1985 complete and 0 interrupted iterations
+measure   [  13% ] 0001/0100 VUs  04.0s/30s  500.00 iters/s
+
+running (0m05.0s), 0001/0100 VUs, 2485 complete and 0 interrupted iterations
+measure   [  17% ] 0001/0100 VUs  05.0s/30s  500.00 iters/s
+
+running (0m06.0s), 0001/0100 VUs, 2985 complete and 0 interrupted iterations
+measure   [  20% ] 0001/0100 VUs  06.0s/30s  500.00 iters/s
+
+running (0m07.0s), 0001/0100 VUs, 3485 complete and 0 interrupted iterations
+measure   [  23% ] 0001/0100 VUs  07.0s/30s  500.00 iters/s
+
+running (0m08.0s), 0001/0100 VUs, 3984 complete and 0 interrupted iterations
+measure   [  27% ] 0001/0100 VUs  08.0s/30s  500.00 iters/s
+
+running (0m09.0s), 0001/0100 VUs, 4485 complete and 0 interrupted iterations
+measure   [  30% ] 0001/0100 VUs  09.0s/30s  500.00 iters/s
+
+running (0m10.0s), 0001/0100 VUs, 4985 complete and 0 interrupted iterations
+measure   [  33% ] 0001/0100 VUs  10.0s/30s  500.00 iters/s
+
+running (0m11.0s), 0000/0100 VUs, 5486 complete and 0 interrupted iterations
+measure   [  37% ] 0000/0100 VUs  11.0s/30s  500.00 iters/s
+
+running (0m12.0s), 0001/0100 VUs, 5985 complete and 0 interrupted iterations
+measure   [  40% ] 0001/0100 VUs  12.0s/30s  500.00 iters/s
+
+running (0m13.0s), 0001/0100 VUs, 6485 complete and 0 interrupted iterations
+measure   [  43% ] 0001/0100 VUs  13.0s/30s  500.00 iters/s
+
+running (0m14.0s), 0001/0100 VUs, 6985 complete and 0 interrupted iterations
+measure   [  47% ] 0001/0100 VUs  14.0s/30s  500.00 iters/s
+
+running (0m15.0s), 0001/0100 VUs, 7485 complete and 0 interrupted iterations
+measure   [  50% ] 0001/0100 VUs  15.0s/30s  500.00 iters/s
+
+running (0m16.0s), 0001/0100 VUs, 7985 complete and 0 interrupted iterations
+measure   [  53% ] 0001/0100 VUs  16.0s/30s  500.00 iters/s
+
+running (0m17.0s), 0001/0100 VUs, 8485 complete and 0 interrupted iterations
+measure   [  57% ] 0001/0100 VUs  17.0s/30s  500.00 iters/s
+
+running (0m18.0s), 0001/0100 VUs, 8985 complete and 0 interrupted iterations
+measure   [  60% ] 0001/0100 VUs  18.0s/30s  500.00 iters/s
+
+running (0m19.0s), 0001/0100 VUs, 9485 complete and 0 interrupted iterations
+measure   [  63% ] 0001/0100 VUs  19.0s/30s  500.00 iters/s
+
+running (0m20.0s), 0001/0100 VUs, 9985 complete and 0 interrupted iterations
+measure   [  67% ] 0001/0100 VUs  20.0s/30s  500.00 iters/s
+
+running (0m21.0s), 0000/0100 VUs, 10485 complete and 0 interrupted iterations
+measure   [  70% ] 0000/0100 VUs  21.0s/30s  500.00 iters/s
+
+running (0m22.0s), 0001/0100 VUs, 10985 complete and 0 interrupted iterations
+measure   [  73% ] 0001/0100 VUs  22.0s/30s  500.00 iters/s
+
+running (0m23.0s), 0001/0100 VUs, 11484 complete and 0 interrupted iterations
+measure   [  77% ] 0001/0100 VUs  23.0s/30s  500.00 iters/s
+
+running (0m24.0s), 0001/0100 VUs, 11985 complete and 0 interrupted iterations
+measure   [  80% ] 0001/0100 VUs  24.0s/30s  500.00 iters/s
+
+running (0m25.0s), 0001/0100 VUs, 12485 complete and 0 interrupted iterations
+measure   [  83% ] 0001/0100 VUs  25.0s/30s  500.00 iters/s
+
+running (0m26.0s), 0002/0100 VUs, 12984 complete and 0 interrupted iterations
+measure   [  87% ] 0002/0100 VUs  26.0s/30s  500.00 iters/s
+
+running (0m27.0s), 0001/0100 VUs, 13485 complete and 0 interrupted iterations
+measure   [  90% ] 0001/0100 VUs  27.0s/30s  500.00 iters/s
+
+running (0m28.0s), 0000/0100 VUs, 13985 complete and 0 interrupted iterations
+measure   [  93% ] 0000/0100 VUs  28.0s/30s  500.00 iters/s
+
+running (0m29.0s), 0001/0100 VUs, 14485 complete and 0 interrupted iterations
+measure   [  97% ] 0001/0100 VUs  29.0s/30s  500.00 iters/s
+
+running (0m30.0s), 0001/0100 VUs, 14985 complete and 0 interrupted iterations
+measure   [ 100% ] 0001/0100 VUs  30.0s/30s  500.00 iters/s
+
+=== ScaleLink k6 (limited) offered 500/s for 30s (after 0s warm-up) ===
+requests: 15001   achieved: 500.0/s   dropped iterations: 0
+status: 201=300 429=14700 302=0 unexpected=1 {"no_response_status_0":0,"status_502":1,"status_503":0,"status_504":0,"other":0}
+latency ms: p50=1.2 p95=2.2 p99=6.7 max=67.6
+
+running (0m30.0s), 0000/0100 VUs, 15001 complete and 0 interrupted iterations
+measure ✓ [ 100% ] 0000/0100 VUs  30s  500.00 iters/s

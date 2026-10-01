@@ -1,0 +1,36 @@
+{
+  "scenario": "limited",
+  "offered_rate_per_s": 500,
+  "measured_seconds": 30,
+  "warmup_seconds": 0,
+  "requests": 15001,
+  "achieved_rate_per_s": 500.03333333333336,
+  "dropped_iterations": 0,
+  "failed_rate": 0.00006666222251849876,
+  "status": {
+    "created_201": 300,
+    "limited_429": 14700,
+    "redirected_302": 0,
+    "unexpected": 1,
+    "unexpected_breakdown": {
+      "no_response_status_0": 0,
+      "status_502": 1,
+      "status_503": 0,
+      "status_504": 0,
+      "other": 0
+    }
+  },
+  "latency_ms": {
+    "avg": 1.5575634769015392,
+    "p50": 1.236838,
+    "p90": 1.742825,
+    "p95": 2.212383,
+    "p99": 6.697918,
+    "max": 67.619195
+  },
+  "limited_invariant": {
+    "limit": 100,
+    "window_s": 10,
+    "max_admissible": 300
+  }
+}

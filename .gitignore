@@ -11,3 +11,8 @@ terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
 terraform/scalelink_ssh_key.pem
+
+# Ad hoc benchmark output; only the cited run is committed
+benchmark-results/*
+!benchmark-results/official-run/
+!benchmark-results/earlier-run-be8db57/
