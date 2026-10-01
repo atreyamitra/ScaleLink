@@ -1,98 +1,59 @@
-const { nanoid } = require('nanoid');
-const { getRedisClient } = require('../config/redis');
-const env = require('../config/env');
+'use strict';
 
-const CODE_LENGTH = 7;
-const URL_KEY_PREFIX = 'url:'; // url:{code} -> original URL
-const CLICKS_KEY_PREFIX = 'clicks:'; // clicks:{code} -> integer counter
+const { parseShortenRequest } = require('../links/validate');
 
-function isValidUrl(str) {
-  try {
-    const u = new URL(str);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
+// Codes are nanoid output ([A-Za-z0-9_-]). Anything else cannot exist, so we
+// answer 404 without touching Redis (favicon.ico, scanners, 10kb paths...).
+const CODE_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 
-async function shorten(req, res, next) {
-  try {
-    const { url } = req.body;
-    if (!url || typeof url !== 'string' || !isValidUrl(url)) {
-      return res.status(400).json({ error: 'A valid http(s) URL is required' });
-    }
+function createLinkController({ store, config, generateCode }) {
+  const notFound = (res) => res.status(404).json({ error: 'Short link not found' });
 
-    const redis = getRedisClient();
-    let code;
-    let attempts = 0;
+  async function shorten(req, res) {
+    const { url, ttlSeconds } = parseShortenRequest(req, config.links);
+    const effectiveTtl = ttlSeconds ?? config.links.defaultTtlSeconds;
 
-    // Collision retry loop - astronomically unlikely at this ID space, but
-    // correctness under a shared keyspace across N stateless instances is
-    // exactly the kind of thing worth being explicit about.
-    do {
-      code = nanoid(CODE_LENGTH);
-      attempts += 1;
-    } while ((await redis.exists(URL_KEY_PREFIX + code)) && attempts < 5);
+    const code = await store.reserve({ url, ttlSeconds: effectiveTtl, generateCode });
 
-    await redis.set(URL_KEY_PREFIX + code, url);
-    await redis.set(CLICKS_KEY_PREFIX + code, 0);
-
-    return res.status(201).json({
+    res.status(201).json({
       code,
-      shortUrl: `${env.baseUrl}/${code}`,
+      shortUrl: `${config.baseUrl}/${code}`,
       originalUrl: url,
-      servedBy: env.instanceId,
+      ttlSeconds: effectiveTtl,
+      servedBy: config.instanceId,
     });
-  } catch (err) {
-    next(err);
   }
-}
 
-async function redirect(req, res, next) {
-  try {
+  async function redirect(req, res) {
     const { code } = req.params;
-    const redis = getRedisClient();
+    if (!CODE_PATTERN.test(code)) return notFound(res);
 
-    const originalUrl = await redis.get(URL_KEY_PREFIX + code);
-    if (!originalUrl) {
-      return res.status(404).json({ error: 'Short link not found' });
-    }
+    // HEAD (link previews, uptime probes) resolves but is not a click.
+    const url = await store.resolve(code, { countClick: req.method !== 'HEAD' });
+    if (!url) return notFound(res);
 
-    // Fire-and-forget increment: don't make the redirect (the hot path)
-    // wait on analytics bookkeeping.
-    redis.incr(CLICKS_KEY_PREFIX + code).catch((err) => {
-      console.error('[redirect] failed to increment click count:', err.message);
-    });
-
-    return res.redirect(302, originalUrl);
-  } catch (err) {
-    next(err);
+    // 302, not 301: a permanent redirect would be cached by browsers and
+    // intermediaries, so repeat visits would never reach us to be counted.
+    res.set('Cache-Control', 'no-store');
+    return res.redirect(302, url);
   }
-}
 
-async function stats(req, res, next) {
-  try {
+  async function stats(req, res) {
     const { code } = req.params;
-    const redis = getRedisClient();
+    if (!CODE_PATTERN.test(code)) return notFound(res);
 
-    const [originalUrl, clicks] = await Promise.all([
-      redis.get(URL_KEY_PREFIX + code),
-      redis.get(CLICKS_KEY_PREFIX + code),
-    ]);
-
-    if (!originalUrl) {
-      return res.status(404).json({ error: 'Short link not found' });
-    }
+    const result = await store.stats(code);
+    if (!result) return notFound(res);
 
     return res.json({
       code,
-      originalUrl,
-      clicks: Number(clicks || 0),
-      servedBy: env.instanceId,
+      originalUrl: result.url,
+      clicks: result.clicks,
+      servedBy: config.instanceId,
     });
-  } catch (err) {
-    next(err);
   }
+
+  return { shorten, redirect, stats };
 }
 
-module.exports = { shorten, redirect, stats };
+module.exports = { createLinkController, CODE_PATTERN };

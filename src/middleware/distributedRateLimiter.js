@@ -1,88 +1,55 @@
-const env = require('../config/env');
-const { getRedisClient } = require('../config/redis');
+'use strict';
 
-/**
- * Sliding-window-log rate limiter, implemented as a single atomic Lua script.
- *
- * Why a Lua script and not plain INCR+EXPIRE: this service runs as multiple
- * stateless app instances behind a load balancer, all sharing one Redis. If
- * two instances each ran a separate "read count, then write" sequence for
- * the same client, a race between the read and write on either instance
- * could let both requests through even when the limit is exhausted -
- * classic check-then-act race. A Lua script executes as a single atomic
- * operation inside Redis (Redis is single-threaded per script), so the
- * "trim old entries, count, decide, record" sequence can't be interleaved
- * with another instance's request for the same key, no matter how many app
- * instances are calling it concurrently.
- *
- * Algorithm: sliding window log via a sorted set. Each allowed request is
- * recorded as a member scored by its timestamp; on every check we drop
- * entries older than the window, count what's left, and admit the request
- * only if under the limit - giving a precise (not approximated) sliding
- * window, unlike fixed-window counters which allow bursts at window edges.
- */
-const SLIDING_WINDOW_SCRIPT = `
-local key = KEYS[1]
-local now = tonumber(ARGV[1])
-local window_ms = tonumber(ARGV[2])
-local limit = tonumber(ARGV[3])
+const { StorageUnavailableError } = require('../errors');
 
-redis.call('ZREMRANGEBYSCORE', key, 0, now - window_ms)
-local count = redis.call('ZCARD', key)
-
-if count < limit then
-  redis.call('ZADD', key, now, now .. '-' .. math.random())
-  redis.call('PEXPIRE', key, window_ms)
-  return { 1, limit - count - 1 }
-else
-  return { 0, 0 }
-end
-`;
-
-function getClientWithScript() {
-  const redis = getRedisClient();
-  if (!redis.slidingWindowLimit) {
-    redis.defineCommand('slidingWindowLimit', {
-      numberOfKeys: 1,
-      lua: SLIDING_WINDOW_SCRIPT,
-    });
-  }
-  return redis;
+/** `::ffff:1.2.3.4` and `1.2.3.4` are the same client; don't give them two buckets. */
+function normalizeClientIp(ip) {
+  if (!ip) return 'unknown';
+  return ip.startsWith('::ffff:') && ip.includes('.') ? ip.slice('::ffff:'.length) : ip;
 }
 
-function distributedRateLimiter(options = {}) {
-  const windowMs = (options.windowSeconds ?? env.rateLimit.windowSeconds) * 1000;
-  const limit = options.maxRequests ?? env.rateLimit.maxRequests;
-
+/**
+ * Express middleware around a SlidingWindowLimiter.
+ *
+ * Identity is req.ip. What req.ip means is decided entirely by the app's
+ * `trust proxy` setting (config.trustProxy, default: trust nobody), never by
+ * this middleware reading headers itself.
+ *
+ * Failure policy: FAIL CLOSED. If the limiter's Redis call fails we answer 503
+ * and the request does not proceed. Rationale: the protected handler needs the
+ * same Redis, so failing open would not keep the endpoint working, it would
+ * only remove protection for the moment Redis comes back; and a limiter that
+ * silently disables itself on error hides bugs. See docs/ARCHITECTURE.md.
+ */
+function distributedRateLimiter({ limiter, instanceId, logger }) {
   return async function rateLimitMiddleware(req, res, next) {
+    let result;
     try {
-      const redis = getClientWithScript();
-      const key = `ratelimit:{${req.ip}}`; // hash tag: keeps this stable under Redis Cluster too
-      const now = Date.now();
-
-      const [allowed, remaining] = await redis.slidingWindowLimit(key, now, windowMs, limit);
-
-      res.set('X-RateLimit-Limit', String(limit));
-      res.set('X-RateLimit-Remaining', String(Math.max(0, remaining)));
-      res.set('X-Served-By', env.instanceId);
-
-      if (!allowed) {
-        res.set('Retry-After', String(Math.ceil(windowMs / 1000)));
-        return res.status(429).json({
-          error: 'Too many requests',
-          limit,
-          windowSeconds: windowMs / 1000,
-          servedBy: env.instanceId,
-        });
-      }
-
-      next();
+      result = await limiter.check(normalizeClientIp(req.ip));
     } catch (err) {
-      // Fail open: an infra hiccup shouldn't take the whole API down.
-      console.error('[rateLimiter] redis error, failing open:', err.message);
-      next();
+      logger.error({ err: err.message }, 'rate limiter backend failure; failing closed');
+      return next(new StorageUnavailableError(err));
     }
+
+    res.set('X-RateLimit-Limit', String(result.limit));
+    res.set('X-RateLimit-Remaining', String(result.remaining));
+    res.set('X-Served-By', instanceId);
+
+    if (!result.allowed) {
+      // Time until the oldest counted request ages out of the window, i.e.
+      // the earliest moment a retry can be admitted.
+      const retryAfterSeconds = Math.max(1, Math.ceil(result.retryAfterMs / 1000));
+      res.set('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({
+        error: 'Too many requests',
+        limit: result.limit,
+        retryAfterSeconds,
+        servedBy: instanceId,
+      });
+    }
+
+    return next();
   };
 }
 
-module.exports = { distributedRateLimiter, SLIDING_WINDOW_SCRIPT };
+module.exports = { distributedRateLimiter, normalizeClientIp };

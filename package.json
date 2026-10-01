@@ -1,17 +1,23 @@
 {
   "name": "scalelink",
   "version": "1.0.0",
-  "description": "Distributed URL shortener & rate limiter, load-tested on Azure",
+  "description": "Distributed URL shortener with an atomic Redis Lua sliding-window rate limiter",
   "main": "src/server.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand"
+    "test": "jest --runInBand",
+    "test:unit": "jest --runInBand tests/unit",
+    "smoke": "node scripts/smoke.js",
+    "bench": "bash scripts/bench.sh"
   },
-  "keywords": [],
+  "keywords": [
+    "redis",
+    "lua",
+    "rate-limiting",
+    "url-shortener",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -20,16 +26,16 @@
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "ioredis": "^6.0.0",
-    "joi": "^18.2.5",
     "nanoid": "^3.3.18",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0"
   },
   "devDependencies": {
-    "autocannon": "^8.0.0",
-    "cross-env": "^10.1.0",
-    "ioredis-mock": "^8.13.1",
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
   }
 }

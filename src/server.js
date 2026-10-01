@@ -1,17 +1,43 @@
+'use strict';
+
+require('dotenv').config({ quiet: true });
+
 const createApp = require('./app');
-const env = require('./config/env');
-const { getRedisClient } = require('./config/redis');
+const { loadConfig } = require('./config/env');
+const { createRedisClient, closeRedisClient } = require('./config/redis');
+const { createLogger } = require('./logger');
 
-getRedisClient(); // eagerly connect, logs on success
+const config = loadConfig();
+const logger = createLogger(config);
+const redis = createRedisClient(config, logger);
+const app = createApp({ config, redis, logger });
 
-const app = createApp();
-const server = app.listen(env.port, () => {
-  console.log(`[server] instance=${env.instanceId} listening on port ${env.port} (${env.nodeEnv})`);
+const server = app.listen(config.port, () => {
+  logger.info(
+    { port: config.port, env: config.nodeEnv, trustProxy: config.trustProxy, rateLimit: config.rateLimit },
+    'scalelink listening'
+  );
 });
 
-const shutdown = (signal) => {
-  console.log(`[server] received ${signal}, shutting down...`);
-  server.close(() => process.exit(0));
-};
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, 'shutting down');
+
+  // Never hang on a stuck connection.
+  setTimeout(() => process.exit(1), 10_000).unref();
+
+  server.close(async () => {
+    await closeRedisClient(redis);
+    process.exit(0);
+  });
+  server.closeIdleConnections();
+}
+
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('unhandledRejection', (reason) => {
+  logger.error({ reason: String(reason) }, 'unhandled rejection; exiting');
+  process.exit(1);
+});

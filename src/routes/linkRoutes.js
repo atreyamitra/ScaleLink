@@ -1,12 +1,24 @@
+'use strict';
+
 const express = require('express');
-const linkController = require('../controllers/linkController');
-const { distributedRateLimiter } = require('../middleware/distributedRateLimiter');
 
-const apiRouter = express.Router();
-apiRouter.post('/shorten', distributedRateLimiter(), linkController.shorten);
+/**
+ * Order on POST /api/shorten matters: the rate limiter runs BEFORE the body
+ * parser, so every attempt is metered, including malformed, oversized, or
+ * invalid ones. (With the parser first, a client could send unlimited garbage
+ * bodies for free.)
+ */
+function createRouters({ controller, rateLimiter, bodyLimit }) {
+  const apiRouter = express.Router();
+  apiRouter.post('/shorten', rateLimiter, express.json({ limit: bodyLimit }), controller.shorten);
 
-const redirectRouter = express.Router();
-redirectRouter.get('/:code/stats', linkController.stats);
-redirectRouter.get('/:code', linkController.redirect);
+  // Mounted at the root so the shortUrl returned by /api/shorten works as-is.
+  // `/:code/stats` must be registered before `/:code`.
+  const redirectRouter = express.Router();
+  redirectRouter.get('/:code/stats', controller.stats);
+  redirectRouter.get('/:code', controller.redirect);
 
-module.exports = { apiRouter, redirectRouter };
+  return { apiRouter, redirectRouter };
+}
+
+module.exports = { createRouters };

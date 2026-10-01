@@ -1,47 +1,78 @@
+'use strict';
+
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const pinoHttp = require('pino-http');
-const pino = require('pino');
+const { nanoid } = require('nanoid');
 
-const env = require('./config/env');
-const { apiRouter, redirectRouter } = require('./routes/linkRoutes');
-const { notFound, errorHandler } = require('./middleware/errorHandler');
+const { LinkStore } = require('./links/linkStore');
+const { SlidingWindowLimiter } = require('./limiter/slidingWindowLimiter');
+const { distributedRateLimiter } = require('./middleware/distributedRateLimiter');
+const { createLinkController } = require('./controllers/linkController');
+const { createRouters } = require('./routes/linkRoutes');
+const { notFound, createErrorHandler } = require('./middleware/errorHandler');
 
-const logger = pino({ level: env.nodeEnv === 'test' ? 'silent' : 'info' });
+/**
+ * Builds one app instance from explicit dependencies, so tests can run several
+ * differently configured instances (each with its own Redis connection) in one
+ * process, and inject a deterministic code generator to force collisions.
+ *
+ * @param {object} deps
+ * @param {object} deps.config     result of loadConfig()
+ * @param {object} deps.redis      an ioredis client
+ * @param {object} deps.logger     a pino logger
+ * @param {() => string} [deps.generateCode]
+ */
+function createApp({ config, redis, logger, generateCode }) {
+  const codeGenerator = generateCode || (() => nanoid(config.links.codeLength));
 
-function createApp() {
+  const store = new LinkStore(redis, { maxCodeAttempts: config.links.maxCodeAttempts });
+  const limiter = new SlidingWindowLimiter(redis, {
+    windowMs: config.rateLimit.windowSeconds * 1000,
+    limit: config.rateLimit.maxRequests,
+  });
+  const controller = createLinkController({ store, config, generateCode: codeGenerator });
+  const { apiRouter, redirectRouter } = createRouters({
+    controller,
+    rateLimiter: distributedRateLimiter({ limiter, instanceId: config.instanceId, logger }),
+    bodyLimit: '4kb',
+  });
+
   const app = express();
+
+  // Whose X-Forwarded-For we believe. Default: nobody, so req.ip is the TCP
+  // peer and a client cannot choose its own rate-limit bucket. See
+  // parseTrustProxy() in config/env.js and docs/ARCHITECTURE.md.
+  app.set('trust proxy', config.trustProxy);
 
   app.use(helmet());
   app.use(cors());
-  app.use(express.json({ limit: '10kb' }));
-
-  // Behind the Azure Load Balancer, the LB's IP would otherwise be all
-  // req.ip ever sees, collapsing every real client into one rate-limit
-  // bucket. Trusting the proxy lets Express derive the real client IP from
-  // X-Forwarded-For - correct behavior for any service sitting behind a
-  // load balancer, and also what makes the k6 load test's simulated
-  // per-client IPs (see loadtest/k6-script.js) actually exercise
-  // *separate* rate-limit buckets instead of one shared one.
-  app.set('trust proxy', true);
-  if (env.nodeEnv !== 'test') {
-    app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/health' } }));
+  if (config.logLevel !== 'silent') {
+    app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/ready' } }));
   }
 
-  // Health check also reports which instance answered - useful during the
-  // load test to visually confirm the load balancer is actually spreading
-  // traffic across both app VMs, not just hammering one.
+  // Liveness: the process is up and serving HTTP. Deliberately independent of
+  // Redis, so a Redis outage does not make an orchestrator restart healthy app
+  // containers.
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', instance: env.instanceId, env: env.nodeEnv });
+    res.json({ status: 'ok', instance: config.instanceId, env: config.nodeEnv });
+  });
+
+  // Readiness: this instance can reach Redis right now. Used for startup
+  // ordering (compose `depends_on: service_healthy`) and load-balancer checks.
+  app.get('/ready', async (req, res) => {
+    if (await store.ping()) {
+      return res.json({ status: 'ready', instance: config.instanceId });
+    }
+    return res.status(503).json({ status: 'redis unavailable', instance: config.instanceId });
   });
 
   app.use('/api', apiRouter);
-  // Root-level redirect matches the shortUrl format returned by /api/shorten
   app.use('/', redirectRouter);
 
   app.use(notFound);
-  app.use(errorHandler);
+  app.use(createErrorHandler(logger));
 
   return app;
 }
