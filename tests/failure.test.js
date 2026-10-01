@@ -132,32 +132,40 @@ describe('Redis stalled (accepts connections, answers nothing)', () => {
   });
 });
 
-describe('ambiguous write outcome: no blind retry', () => {
-  it('a connection lost after a create\'s SET NX was sent yields 503 and exactly ONE mapping (the SET is not re-sent)', async () => {
-    // Let the limiter's EVALSHA through normally; when the SET NX for the new
-    // link goes out, Redis EXECUTES it but its reply is swallowed...
-    const setSent = proxy.dropRepliesWhen(/SET[\s\S]*link:\{/i);
+describe('ambiguous write outcome: in-flight commands are never silently re-sent', () => {
+  // Both tests lose the connection AFTER Redis has executed a write but BEFORE
+  // the app saw the reply, then restore the connection while the command is
+  // still pending (well inside the command timeout). With
+  // autoResendUnfulfilledCommands=true ioredis would re-send the write on
+  // reconnect and the app would act on the second execution's reply.
+  async function loseReplyThenReconnect(trigger, request) {
+    const sent = proxy.dropRepliesWhen(trigger);
     // supertest requests are lazy thenables: .then() is what actually sends it.
-    const inFlight = create('https://example.com/ambiguous').then((r) => r);
-    await setSent;
-    await sleep(60); // the SET reaches Redis in well under a millisecond locally; 60ms is ample
-    // ...then the connection dies with the SET unanswered.
+    const inFlight = request().then((r) => r);
+    await sent;
+    await sleep(60); // the write reaches Redis in well under a millisecond locally; 60ms is ample
     proxy.sever();
-
+    await proxy.heal(); // reconnect succeeds ~50ms later, well within the 300ms command timeout
     const res = await inFlight;
-    expect(res.status).toBe(503);
-    // It really was applied on the server: the outcome WAS ambiguous to the app.
-    expect(await admin.keys('link:*')).toHaveLength(1);
-
-    await proxy.heal();
     await until(async () => (await app.request.get('/ready')).status === 200);
-    await sleep(300); // room for any (unwanted) automatic resend to show up
+    await sleep(300); // room for any (unwanted) late resend to show up
+    return res;
+  }
 
-    // Had ioredis auto-resent the unanswered SET NX after reconnecting, it would
-    // have hit its own key (-> "collision") and the app would have retried with
-    // a new code and written a SECOND mapping.
+  it('create: 503 and exactly ONE mapping (a re-sent SET NX would look like a collision and mint a second code)', async () => {
+    const res = await loseReplyThenReconnect(/SET[\s\S]*link:\{/i, () => create('https://example.com/ambiguous'));
+
+    expect(res.status).toBe(503);
     const links = await admin.keys('link:*');
-    expect(links).toHaveLength(1);
+    expect(links).toHaveLength(1); // the original SET really was applied, exactly once
     expect(await admin.get(links[0])).toBe('https://example.com/ambiguous');
+  });
+
+  it('redirect: 503 and the click is counted exactly ONCE (a re-sent increment would double-count)', async () => {
+    const { body } = await create('https://example.com/clicks');
+    const res = await loseReplyThenReconnect(/link:\{[^}]+\}:clicks/, () => app.request.get(`/${body.code}`).redirects(0));
+
+    expect(res.status).toBe(503);
+    expect(await admin.get(`link:{${body.code}}:clicks`)).toBe('1');
   });
 });
