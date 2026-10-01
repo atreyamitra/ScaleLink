@@ -1,0 +1,29 @@
+{
+  "scenario": "limited",
+  "offered_rate_per_s": 500,
+  "measured_seconds": 10,
+  "warmup_seconds": 0,
+  "requests": 5000,
+  "achieved_rate_per_s": 500,
+  "dropped_iterations": 0,
+  "failed_rate": 0,
+  "status": {
+    "created_201": 100,
+    "limited_429": 4900,
+    "redirected_302": 0,
+    "unexpected": 0
+  },
+  "latency_ms": {
+    "avg": 1.5159801731999976,
+    "p50": 1.2367225,
+    "p90": 1.8121252000000008,
+    "p95": 2.37856565,
+    "p99": 5.8189962800000075,
+    "max": 33.392609
+  },
+  "limited_invariant": {
+    "limit": 100,
+    "window_s": 10,
+    "max_admissible": 100
+  }
+}

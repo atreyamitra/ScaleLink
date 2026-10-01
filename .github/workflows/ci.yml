@@ -78,7 +78,8 @@ jobs:
         run: docker compose up -d --build --wait
 
       - name: Smoke test through nginx
-        run: node scripts/smoke.js http://localhost:8080
+        # 127.0.0.1, not localhost: no IPv4/IPv6 ambiguity about which address nginx answers on
+        run: node scripts/smoke.js http://127.0.0.1:8080
 
       - name: Dump container logs on failure
         if: failure()

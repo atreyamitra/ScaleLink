@@ -1,0 +1,13 @@
+date_utc:      2026-10-01T02:50:47Z
+git_commit:    b50ded4679ccc9c9d728e50a3ce245aa6a623946 (clean)
+kernel:        Linux 6.18.44-fc-v50
+cpus:          4
+memory_mb:     16094
+docker:        29.6.2
+k6:            k6 v2.3.0 (commit/e088784614, go1.27.1, linux/amd64)
+rates:         500 1000 2000 3000 4000
+duration_s:    30 (+5s warm-up for shorten/redirect)
+--- stack for limit=1000000000 window=10s
+redis_version:7.4.11
+--- stack for limit=100 window=10s
+redis_version:7.4.11

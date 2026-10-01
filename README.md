@@ -21,10 +21,11 @@ claims proven by tests against a real Redis.
   silently re-sent, and the instance reconnects by itself.
 * **Client identity can't be forged.** `trust proxy` defaults to *nobody*;
   `X-Forwarded-For` is only honoured from configured hops.
-* **The tests are adversarial.** 98 tests, all against a real Redis (no mock),
-  including two real OS processes racing, real key collisions, and TCP-level
-  fault injection. 16 deliberate bugs were injected into the source one at a
-  time; every one made a test fail ([TESTING.md](TESTING.md)).
+* **The tests are adversarial.** 98 tests; the 65 that make claims about Redis
+  run against a real Redis (there is no Redis mock anywhere), including two real
+  OS processes racing, real key collisions, and TCP-level fault injection. 16
+  deliberate bugs were injected into the source one at a time; every one made a
+  test fail ([TESTING.md](TESTING.md)).
 
 ## Architecture
 
@@ -95,7 +96,7 @@ supertest, k6, GitHub Actions.
 ```bash
 docker run -d -p 6379:6379 redis:7-alpine   # a real Redis is REQUIRED; tests fail (not skip) without one
 npm ci
-npm test                                     # 98 tests: unit + real-Redis integration/concurrency
+npm test                                     # 98 tests: 33 unit + 65 real-Redis integration/concurrency
 ```
 
 The suite uses Redis database 15 (`TEST_REDIS_URL` to change; it refuses db 0
@@ -105,7 +106,16 @@ container, then builds the real Docker image and smoke-tests the full nginx +
 
 ## Benchmark
 
-<!--BENCH-->
+Under one documented setup (one 4-vCPU VM with the load generator on the same
+machine; nginx → 2 Node instances → Redis), k6 observed **2,000 `POST /api/shorten`
+per second for 30 s with p99 30 ms and no errors**, **4,000 redirects per second
+with p99 137 ms and no errors**, and the write path **not** sustaining 4,000/s
+(3,879 achieved, p99 1.6 s). Through the same stack the limiter admitted exactly
+its hard maximum (300 of 15,001) under 500 req/s from one client. One run per
+rate, one client IP, logging off: read [BENCHMARK.md](BENCHMARK.md) for the setup,
+every limitation, and the two config defects the benchmark exposed (nginx's
+default connection limit, and a Node/nginx keep-alive 502 race). Reproduce with
+`bash scripts/bench.sh`.
 
 ## Quick start
 

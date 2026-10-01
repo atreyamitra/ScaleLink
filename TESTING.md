@@ -59,7 +59,17 @@ by the tests.
 
 ## Flakiness check
 
-<!--FLAKE-->
+Concurrency tests are only credible if they are stable, so the whole suite was
+run repeatedly:
+
+* **20 consecutive full runs, 20/20 green** (98/98 each), on the final code, locally
+  (Node 22.22, Redis 7.0.15). An earlier 15-run loop, taken before the last test
+  rewrite, was also all green.
+* CI has run it on Node 20 and Node 22 against a Redis 7 service container; both
+  jobs passed on the runs for commits `b50ded4` and `d2fdc11`.
+
+This shows no flake in 35 local runs; it does not prove there is none (timing
+tests carry the explicit tolerances listed above).
 
 ## Mutation audit: can the tests fail?
 

@@ -162,8 +162,13 @@ unused suffix, deterministically, with no randomness and no second key. Test:
 * `PEXPIRE key window` on every accept: an idle client's key disappears
   `window` after its last accepted request, exactly when its newest entry would
   have aged out.
-* Memory ≈ (clients active in the last window) × (≤ `limit` members each).
-  A log is exact but costs O(`limit`) per client, versus O(1) for a counter.
+* Memory ≈ (clients active in the last window) × (≤ `limit` entries each). A log
+  is exact but costs O(`limit`) per client, versus O(1) for a counter. Measured with
+  `MEMORY USAGE` on Redis 7.0.15: about **30 bytes per entry** while the set has at
+  most 128 entries (Redis keeps it in the compact listpack encoding; 696 B for 20
+  entries), then about **130 bytes per entry** once it exceeds 128 and Redis
+  converts it to a skiplist (17 KB for 129, 1.37 MB for 10,000). A large `limit`
+  therefore costs disproportionately more per entry.
 * Time per request: O(log N + M) with N ≤ `limit` and M the number of entries
   removed (each entry is removed once).
 

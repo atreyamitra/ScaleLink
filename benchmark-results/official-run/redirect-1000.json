@@ -1,0 +1,31 @@
+{
+  "scenario": "redirect",
+  "offered_rate_per_s": 1000,
+  "measured_seconds": 30,
+  "warmup_seconds": 5,
+  "requests": 30000,
+  "achieved_rate_per_s": 1000,
+  "dropped_iterations": 0,
+  "failed_rate": 0,
+  "status": {
+    "created_201": 0,
+    "limited_429": 0,
+    "redirected_302": 30000,
+    "unexpected": 0,
+    "unexpected_breakdown": {
+      "no_response_status_0": 0,
+      "status_502": 0,
+      "status_503": 0,
+      "status_504": 0,
+      "other": 0
+    }
+  },
+  "latency_ms": {
+    "avg": 1.230476167633336,
+    "p50": 1.030178,
+    "p90": 1.5041966000000004,
+    "p95": 2.0499430999999997,
+    "p99": 5.236875979999954,
+    "max": 46.984151
+  }
+}

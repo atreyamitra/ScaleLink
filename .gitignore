@@ -16,3 +16,4 @@ terraform/scalelink_ssh_key.pem
 benchmark-results/*
 !benchmark-results/official-run/
 !benchmark-results/earlier-run-be8db57/
+!benchmark-results/exploratory-before-nginx-fix/

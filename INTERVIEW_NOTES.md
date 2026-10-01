@@ -74,10 +74,11 @@ an attacker hammering a closed window can't grow the set past `limit`.
 **What happens at high request volume?**
 Per-request cost is O(log limit) and Redis executes the scripts serially on one
 thread, so Redis throughput is the ceiling for the whole system (plus network).
-In my benchmark the Node processes and nginx saturated before Redis did (Redis
-was ~25% of a core when latency started climbing), but that is one machine and
-says nothing about a bigger deployment. Beyond a single Redis you'd shard by
-client key; the keys already use hash tags.
+In my benchmark the two Node processes were each near a full core at 3,000–4,000
+req/s while Redis peaked around 37% of one core, so Redis was not the constraint
+*there*. That is one 4-vCPU machine with the load generator on it, so it says
+nothing about Redis's own ceiling or a bigger deployment. Beyond a single Redis
+you'd shard by client key; the keys already use hash tags.
 
 ## Short codes
 
@@ -141,9 +142,11 @@ throughput; the keys already carry hash tags so a link's two keys and a client's
 limiter key each land on one slot. I have not run any of that.
 
 **What would change for millions of users?**
-Redis HA (sentinel/cluster), memory sizing for the limiter log
-(clients × limit × ~50 B) or a cheaper algorithm (sliding-window counter / GCRA)
-if `limit` were large, an eviction/TTL policy for links, auth and ownership,
+Redis HA (sentinel/cluster), memory sizing for the limiter log (I measured
+about 30 B per entry up to 128 entries, then about 130 B once Redis switches the
+sorted set to a skiplist, so `limit` is not free) or a cheaper algorithm
+(sliding-window counter / GCRA) if `limit` were large, an eviction/TTL policy for
+links, auth and ownership,
 abuse handling for the unlimited read path, metrics/tracing, and a CDN for
 redirects. The limiter's per-client cost is the first thing I would revisit.
 
@@ -153,4 +156,39 @@ structured request IDs, a real secret/config story, rate limiting on reads and
 `stats`, link ownership/auth, a `maxmemory` policy, and load testing from a
 separate machine.
 
-<!--BENCH-QA-->
+## What the benchmark does and does not show
+
+**What does the benchmark prove?**
+Under one documented setup (one 4-vCPU VM, k6 on the same machine, nginx → 2 Node
+instances → Redis 7.4, logging at `warn`), k6 observed 2,000 `POST /api/shorten`
+per second for 30 s with p99 30 ms and no errors, 4,000 redirects per second with
+p99 137 ms and no errors, and the write path failing to sustain 4,000/s (3,879
+achieved, p99 1.6 s). It also showed the limiter holding under load through
+nginx and two instances: at a limit of 100 per 10 s it admitted 300 of 15,001
+requests over 30 s, which is exactly the maximum the invariant allows.
+
+**What does it NOT prove?**
+Anything about other hardware, a separate load generator, many client IPs (all
+load came from one IP, so one hot limiter key), TLS, a cloud deployment, long
+soak, Redis failover, or run-to-run precision (one run per rate; at saturation
+two runs differed by 2× in p99). It is not a comparison with any other system and
+I would not quote a requests-per-second number outside that bounded sentence.
+
+**Did benchmarking find anything?**
+Yes, two real defects in my own config. nginx's default 512 worker connections
+dropped 22% of requests at 4,000/s while the app and Redis were mostly idle
+(nginx's error log said so; fixed with `worker_connections 4096`). And a rare 502
+(6 in ~638k requests) from the Node/nginx keep-alive race, where Node closes an
+idle connection at the instant nginx reuses it; fixed by making the proxy close
+first (nginx 55 s, Node 65 s). The final run had zero in ~641k. I did not build a
+deterministic reproduction, so the cause is "the standard race that matches
+nginx's error text", not proven.
+
+**How did you make sure the tests can actually fail?**
+I injected 16 deliberate bugs one at a time (remove `NX`, make the limiter
+non-atomic, trust forwarded headers, fail open, re-enable client auto-resend,
+...), ran the full suite for each and reverted. All 16 are caught. One was *not*
+caught at first: the "don't blindly retry writes" test passed even with auto-resend
+enabled, because it let the request time out before restoring the connection. I
+rewrote it and it now fails under that mutation.
+

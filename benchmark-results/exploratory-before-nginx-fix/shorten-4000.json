@@ -1,0 +1,24 @@
+{
+  "scenario": "shorten",
+  "offered_rate_per_s": 4000,
+  "measured_seconds": 10,
+  "warmup_seconds": 5,
+  "requests": 39183,
+  "achieved_rate_per_s": 3918.3,
+  "dropped_iterations": 0,
+  "failed_rate": 0.22269861929918588,
+  "status": {
+    "created_201": 30457,
+    "limited_429": 0,
+    "redirected_302": 0,
+    "unexpected": 8726
+  },
+  "latency_ms": {
+    "avg": 50.51856740405247,
+    "p50": 28.347394,
+    "p90": 123.6748446000001,
+    "p95": 194.85019290000002,
+    "p99": 352.65628052,
+    "max": 534.477562
+  }
+}

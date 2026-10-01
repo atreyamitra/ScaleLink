@@ -1,0 +1,24 @@
+{
+  "scenario": "redirect",
+  "offered_rate_per_s": 1000,
+  "measured_seconds": 10,
+  "warmup_seconds": 5,
+  "requests": 10001,
+  "achieved_rate_per_s": 1000.1,
+  "dropped_iterations": 0,
+  "failed_rate": 0,
+  "status": {
+    "created_201": 0,
+    "limited_429": 0,
+    "redirected_302": 10001,
+    "unexpected": 0
+  },
+  "latency_ms": {
+    "avg": 1.2912041877812173,
+    "p50": 1.075284,
+    "p90": 1.592163,
+    "p95": 2.367489,
+    "p99": 6.280355,
+    "max": 12.428525
+  }
+}

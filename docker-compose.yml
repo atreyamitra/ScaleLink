@@ -59,6 +59,13 @@ services:
       - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    # Healthy = nginx is serving AND proxying to a ready app, so `up --wait`
+    # only returns when the whole path works.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
     depends_on:
       app1:
         condition: service_healthy

@@ -1,0 +1,165 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /scripts/k6-script.js
+        output: -
+
+     scenarios: (100.00%) 2 scenarios, 6000 max VUs, 1m5s max duration (incl. graceful stop):
+              * warmup: 4000.00 iterations/s for 5s (maxVUs: 800-3000, exec: redirectOnce, gracefulStop: 30s)
+              * measure: 4000.00 iterations/s for 30s (maxVUs: 800-3000, exec: redirectOnce, startTime: 5s, gracefulStop: 30s)
+
+
+running (0m00.6s), 0248/1600 VUs, 1950 complete and 0 interrupted iterations
+warmup    [  11% ] 0248/0800 VUs  0.6s/5s  4000.00 iters/s
+measure • [   0% ] waiting        4.4s    
+
+running (0m01.6s), 0017/1600 VUs, 6183 complete and 0 interrupted iterations
+warmup    [  31% ] 0017/0800 VUs  1.6s/5s  4000.00 iters/s
+measure • [   0% ] waiting        3.4s    
+
+running (0m02.6s), 0011/1600 VUs, 10194 complete and 0 interrupted iterations
+warmup    [  51% ] 0011/0800 VUs  2.6s/5s  4000.00 iters/s
+measure • [   0% ] waiting        2.4s    
+
+running (0m03.6s), 0104/1600 VUs, 14080 complete and 0 interrupted iterations
+warmup    [  71% ] 0104/0800 VUs  3.6s/5s  4000.00 iters/s
+measure • [   0% ] waiting        1.4s    
+
+running (0m04.6s), 0029/1600 VUs, 18176 complete and 0 interrupted iterations
+warmup    [  91% ] 0029/0800 VUs  4.6s/5s  4000.00 iters/s
+measure • [   0% ] waiting        0.4s    
+
+running (0m05.6s), 0238/1600 VUs, 21815 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [   2% ] 0238/0800 VUs  00.6s/30s  4000.00 iters/s
+
+running (0m06.6s), 0057/1600 VUs, 26152 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [   5% ] 0057/0800 VUs  01.6s/30s  4000.00 iters/s
+
+running (0m07.9s), 0407/1600 VUs, 30457 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [   9% ] 0407/0800 VUs  02.8s/30s  4000.00 iters/s
+
+running (0m08.6s), 0006/1600 VUs, 34202 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  12% ] 0007/0800 VUs  03.6s/30s  4000.00 iters/s
+
+running (0m09.6s), 0040/1600 VUs, 38162 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  15% ] 0040/0800 VUs  04.6s/30s  4000.00 iters/s
+
+running (0m10.6s), 0009/1600 VUs, 42198 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  19% ] 0009/0800 VUs  05.6s/30s  4000.00 iters/s
+
+running (0m11.9s), 0247/1600 VUs, 46848 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  23% ] 0247/0800 VUs  06.8s/30s  4000.00 iters/s
+
+running (0m12.6s), 0042/1600 VUs, 50165 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  25% ] 0042/0800 VUs  07.6s/30s  4000.00 iters/s
+
+running (0m13.6s), 0025/1600 VUs, 54176 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  29% ] 0025/0800 VUs  08.6s/30s  4000.00 iters/s
+
+running (0m14.6s), 0020/1600 VUs, 58187 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  32% ] 0020/0800 VUs  09.6s/30s  4000.00 iters/s
+
+running (0m15.6s), 0026/1600 VUs, 62175 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  35% ] 0026/0800 VUs  10.6s/30s  4000.00 iters/s
+
+running (0m16.6s), 0042/1600 VUs, 66164 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  39% ] 0042/0800 VUs  11.6s/30s  4000.00 iters/s
+
+running (0m17.6s), 0084/1600 VUs, 70121 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  42% ] 0084/0800 VUs  12.6s/30s  4000.00 iters/s
+
+running (0m18.6s), 0013/1600 VUs, 74189 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  45% ] 0013/0800 VUs  13.6s/30s  4000.00 iters/s
+
+running (0m19.6s), 0048/1600 VUs, 78155 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  49% ] 0048/0800 VUs  14.6s/30s  4000.00 iters/s
+
+running (0m20.6s), 0006/1600 VUs, 82196 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  52% ] 0006/0800 VUs  15.6s/30s  4000.00 iters/s
+
+running (0m21.6s), 0020/1600 VUs, 86186 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  55% ] 0020/0800 VUs  16.6s/30s  4000.00 iters/s
+
+running (0m22.6s), 0065/1600 VUs, 90138 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  59% ] 0064/0800 VUs  17.6s/30s  4000.00 iters/s
+
+running (0m23.6s), 0012/1600 VUs, 94195 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  62% ] 0012/0800 VUs  18.6s/30s  4000.00 iters/s
+
+running (0m24.6s), 0009/1600 VUs, 98202 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  65% ] 0009/0800 VUs  19.6s/30s  4000.00 iters/s
+
+running (0m25.6s), 0001/1600 VUs, 102201 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  69% ] 0001/0800 VUs  20.6s/30s  4000.00 iters/s
+
+running (0m26.6s), 0048/1600 VUs, 106160 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  72% ] 0048/0800 VUs  21.6s/30s  4000.00 iters/s
+
+running (0m27.6s), 0017/1600 VUs, 110186 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  75% ] 0017/0800 VUs  22.6s/30s  4000.00 iters/s
+
+running (0m28.6s), 0279/1600 VUs, 113925 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  79% ] 0280/0800 VUs  23.6s/30s  4000.00 iters/s
+
+running (0m29.6s), 0061/1600 VUs, 118142 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  82% ] 0061/0800 VUs  24.6s/30s  4000.00 iters/s
+
+running (0m30.6s), 0254/1600 VUs, 121822 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  85% ] 0254/0800 VUs  25.6s/30s  4000.00 iters/s
+
+running (0m31.6s), 0007/1600 VUs, 126196 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  89% ] 0007/0800 VUs  26.6s/30s  4000.00 iters/s
+
+running (0m32.6s), 0092/1600 VUs, 130062 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  92% ] 0092/0800 VUs  27.6s/30s  4000.00 iters/s
+
+running (0m33.6s), 0024/1600 VUs, 134180 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  95% ] 0024/0800 VUs  28.6s/30s  4000.00 iters/s
+
+running (0m34.6s), 0006/1600 VUs, 138200 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s         4000.00 iters/s
+measure   [  99% ] 0006/0800 VUs  29.6s/30s  4000.00 iters/s
+
+=== ScaleLink k6 (redirect) offered 4000/s for 30s (after 5s warm-up) ===
+requests: 120000   achieved: 4000.0/s   dropped iterations: 0
+status: 201=0 429=0 302=120000 unexpected=0 {"no_response_status_0":0,"status_502":0,"status_503":0,"status_504":0,"other":0}
+latency ms: p50=6.0 p95=64.5 p99=137.1 max=483.3
+
+running (0m35.1s), 0000/1600 VUs, 140001 complete and 0 interrupted iterations
+warmup  ✓ [ 100% ] 0000/0800 VUs  5s   4000.00 iters/s
+measure ✓ [ 100% ] 0000/0800 VUs  30s  4000.00 iters/s
