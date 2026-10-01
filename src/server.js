@@ -19,6 +19,16 @@ const server = app.listen(config.port, () => {
   );
 });
 
+// Keep-alive ordering: the proxy in front must close idle connections BEFORE
+// this server does. Node's default keepAliveTimeout is 5s while nginx keeps idle
+// upstream connections for much longer, so nginx can reuse a connection at the
+// instant Node closes it, which surfaces as a rare 502 ("recv() failed (104:
+// Connection reset by peer) while reading response header from upstream").
+// Observed under load (see BENCHMARK.md). nginx/nginx.conf sets its upstream
+// keepalive_timeout to 55s; keep this larger. headersTimeout must exceed it.
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+
 let shuttingDown = false;
 async function shutdown(signal) {
   if (shuttingDown) return;
